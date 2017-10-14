@@ -5,6 +5,9 @@
 
 #define PIN 6
 
+const int NUM_PIXELS = 60;
+const int MAX_NUM_OF_PARAMS = 5;
+
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = Arduino pin number (most are valid)
 // Parameter 3 = pixel type flags, add together as needed:
@@ -14,6 +17,8 @@
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
 //   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(60, PIN, NEO_GRBW + NEO_KHZ800);
+
+//setPixelColor:0-10;255;255;255;255;
 
 void setup() {
   // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
@@ -28,25 +33,20 @@ void setup() {
   strip.show(); // Initialize all pixels to 'off'
 
   Serial.println("strip initialized");
-}
-
-String getStringToSep(String str, char sep, int from) {
-  int sepIndex = str.indexOf(sep);
-  if (sepIndex > 0) {
-    return str.substring(from, sepIndex);
-  }
-  return "";
+  
+//  Serial.println("");
+//  Serial.println("");
 }
 
 void loop() {  
-  Serial.println("checking for commands");
+//  Serial.println("checking for commands");
   
   String cmd = checkForCommand();
   int c = 0;
   
   while (cmd.length() > 0) {
     c++;
-    Serial.print("command found: ");
+    Serial.print("input found: ");
     Serial.println(cmd);
 
     String method = getStringToSep(cmd, ':', 0);
@@ -57,37 +57,53 @@ void loop() {
       Serial.print("performing method: ");
       Serial.println(method);
 
-      String params[] = {};
-      String param = getStringToSep(cmd, ';', 0);
-
-      Serial.println(param);
+      String params[MAX_NUM_OF_PARAMS] = {};
       
-//      int paramLen = param.length();
-//      while (paramLen > 0) {
-//        cmd = cmd.substring(paramLen + 1);
-//        params[paramLen - 1] = param;
-//        param = getStringToSep(cmd, ';', 0);
-//        paramLen = param.length();
-//      }
-//
-//      int paramsLen = sizeof( params ) / sizeof( String );
-//      if (paramsLen > 0) {
-//        Serial.println("parsed params: ");
-//        for (int i = 0; i < paramsLen; i++) {
-//          Serial.print("0: ");
-//          Serial.println(params[i]);
-//        }
-//      }
-//      else {
-//        Serial.println("no params found");
-//      }
+      String param = getStringToSep(cmd, ';', 0);
+      int paramLen = param.length();
+      bool hasParams = false;
+      
+      for (int i = 0; paramLen > 0 && i < MAX_NUM_OF_PARAMS; i++) {
+          cmd = cmd.substring(paramLen + 1);
+          params[i] = param;
+          param = getStringToSep(cmd, ';', 0);
+          paramLen = param.length();
+          hasParams = true;
+      }
+      
+      if (hasParams) {
+        Serial.println("parsed params: ");
+        for (int i = 0; i < MAX_NUM_OF_PARAMS; i++) {
+          Serial.print(i);
+          Serial.print(": ");
+          Serial.println(params[i]);
+        }
+      }
+      else {
+        Serial.println("no params found");
+      }
+
+      if (method == "setPixelColor") {
+        int arrSepIndex = params[0].indexOf('-');
+        int first = 0;
+        int last = 0;
+        if (arrSepIndex > 0) {
+          first = params[0].substring(0, arrSepIndex).toInt();
+          last = params[0].substring(arrSepIndex + 1).toInt();
+        }
+        else {
+          first = params[0].toInt();
+          last = params[0].toInt();
+        }
+        for (int i = first; i <= last && i < NUM_PIXELS; i++) {
+          setPixel(i, params[1].toInt(), params[2].toInt(), params[3].toInt(), params[4].toInt());
+        }
+      }
     }
-    
-    cmd = checkForCommand();
   }
   
-  Serial.print("commands processed: ");
-  Serial.println(c);
+//  Serial.print("commands processed: ");
+//  Serial.println(c);
 
   if (c > 0) {
     Serial.println("updating strip");
@@ -96,11 +112,23 @@ void loop() {
   
   c = 0;
 
-  Serial.println("waiting 5 seconds");
-  delay(5000);
+//  Serial.println("waiting 5 seconds");
+  delay(1);
   
-  Serial.println("");
-  Serial.println("");
+//  Serial.println("");
+//  Serial.println("");
+}
+
+void setPixel(int pixel, int r, int g, int b, int w) {
+  strip.setPixelColor(pixel, strip.Color(r, g, b, w));
+}
+
+String getStringToSep(String str, char sep, int from) {
+  int sepIndex = str.indexOf(sep);
+  if (sepIndex > 0) {
+    return str.substring(from, sepIndex);
+  }
+  return "";
 }
 
 String checkForCommand() {
