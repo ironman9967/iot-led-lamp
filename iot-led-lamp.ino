@@ -83,7 +83,7 @@ void loop() {
         Serial.println("no params found");
       }
 
-      if (method == "setPixelColor") {
+      if (method == "spc") {
         int arrSepIndex = params[0].indexOf('-');
         int first = 0;
         int last = 0;
